@@ -1,46 +1,36 @@
-import EstimationResult from "@/components/estimation-results";
-import TraitSelector from "@/components/trait-selector";
-import { Skeleton } from "@/components/ui/skeleton";
-import { type Trait } from "@/data/traits";
-import { calculateEstimatedGas } from "@/utils/calculate-gas";
-import { fetchEthUsdPrice } from "@/utils/fetch-eth-price";
-import { fetchGasPriceGwei } from "@/utils/fetch-gas-price";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-export default function Home() {
-    const [selectedTraits, setSelectedTraits] = useState<Trait[]>([]);
-    const [gasPriceGwei, setGasPriceGwei] = useState<number | null>(null);
-    const [ethUsdPrice, setEthUsdPrice] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
+import { EstimationResult } from "@/components/estimation-result";
+import { LivePricePanel } from "@/components/live-price-panel";
+import { TraitChart } from "@/components/trait-chart";
+import { TraitSelector } from "@/components/trait-selector";
+import { AppShell } from "@/layouts/app-shell";
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [gas, eth] = await Promise.all([fetchGasPriceGwei(), fetchEthUsdPrice()]);
-                setGasPriceGwei(gas);
-                setEthUsdPrice(eth);
-            } catch (error) {
-                console.error("Error fetching gas or price:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+import { traits } from "@/data/traits";
+import { useGasAndPrice } from "@/hooks/useGasAndPrice";
+import { useGasEstimation } from "@/hooks/useGasEstimation";
 
-        fetchData();
-    }, []);
+export default function HomePage() {
+    const [selectedTraits, setSelectedTraits] = useState<typeof traits>([]);
 
-    const estimatedGas = calculateEstimatedGas(selectedTraits);
+    const gasUnits = useGasEstimation(selectedTraits);
+    const { gasPriceGwei, ethUsdPrice } = useGasAndPrice();
 
     return (
-        <div className="space-y-6 max-w-xl mx-auto">
-            <h1 className="text-2xl font-bold">NFT Trait Gas Estimator</h1>
-            <TraitSelector onChange={setSelectedTraits} />
+        <AppShell>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Sidebar: Live price panel */}
+                <aside className="md:col-span-1">
+                    <LivePricePanel />
+                </aside>
 
-            {loading ? (
-                <Skeleton className="w-full h-32 rounded-lg" />
-            ) : gasPriceGwei && ethUsdPrice && selectedTraits.length > 0 ? (
-                <EstimationResult estimatedGas={estimatedGas} gasPriceGwei={gasPriceGwei} ethUsdPrice={ethUsdPrice} />
-            ) : null}
-        </div>
+                {/* Main content */}
+                <section className="md:col-span-3 space-y-6">
+                    <TraitSelector traits={traits} selectedTraits={selectedTraits} onChange={setSelectedTraits} />
+                    <EstimationResult gasUnits={gasUnits} gasPrice={gasPriceGwei} ethPrice={ethUsdPrice} />
+                    <TraitChart selectedTraits={selectedTraits} />
+                </section>
+            </div>
+        </AppShell>
     );
 }

@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils";
-import { Check, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
-import { Button } from "./button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "./command";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
 type Option = {
     label: string;
@@ -11,50 +11,61 @@ type Option = {
 };
 
 type Props = {
-    options: Option[];
-    value: string[];
-    onChange: (value: string[]) => void;
+    items: Option[];
+    selected: string[];
+    onChange: (values: string[]) => void;
     placeholder?: string;
+    id?: string;
 };
 
-export function MultiSelect({ options, value, onChange, placeholder = "Select..." }: Props) {
+export function MultiSelect({ items, selected, onChange, placeholder = "Select items...", id }: Props) {
     const [open, setOpen] = React.useState(false);
 
-    const toggleOption = (val: string) => {
-        if (value.includes(val)) {
-            onChange(value.filter((v) => v !== val));
+    const handleSelect = (value: string) => {
+        const isSelected = selected.includes(value);
+        if (isSelected) {
+            onChange(selected.filter((v) => v !== value));
         } else {
-            onChange([...value, val]);
+            onChange([...selected, value]);
         }
     };
+
+    const selectedLabels = items
+        .filter((item) => selected.includes(item.value))
+        .map((item) => item.label)
+        .join(", ");
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" className="w-full justify-between">
-                    {value.length > 0 ? `${value.length} selected` : placeholder}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <Button
+                    id={id}
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between bg-card text-foreground border-border hover:bg-muted overflow-hidden"
+                >
+                    <span className="truncate max-w-[90%] text-left">{selected.length > 0 ? selectedLabels : placeholder}</span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0">
+
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                 <Command>
-                    <CommandInput placeholder="Search traits..." />
-                    <CommandEmpty>No item found.</CommandEmpty>
-                    <CommandGroup>
-                        {options.map((option) => (
-                            <CommandItem key={option.value} onSelect={() => toggleOption(option.value)}>
-                                <div
-                                    className={cn(
-                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                        value.includes(option.value) ? "bg-primary text-white" : "bg-background"
-                                    )}
-                                >
-                                    {value.includes(option.value) && <Check className="h-3.5 w-3.5" />}
-                                </div>
-                                {option.label}
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
+                    <CommandList>
+                        <CommandGroup>
+                            {items.map((item) => {
+                                const isSelected = selected.includes(item.value);
+                                return (
+                                    <CommandItem key={item.value} onSelect={() => handleSelect(item.value)} className="cursor-pointer">
+                                        <Checkbox checked={isSelected} onCheckedChange={() => handleSelect(item.value)} className="mr-2" />
+                                        {item.label}
+                                        {isSelected && <Check className="ml-auto h-4 w-4 opacity-100" />}
+                                    </CommandItem>
+                                );
+                            })}
+                        </CommandGroup>
+                    </CommandList>
                 </Command>
             </PopoverContent>
         </Popover>

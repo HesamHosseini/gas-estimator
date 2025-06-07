@@ -1,34 +1,32 @@
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { type Trait, traits } from "@/data/traits";
-import { useState } from "react";
+import { type Trait } from "@/data/traits";
 
-type TraitSelectorProps = {
-    onChange: (selected: Trait[]) => void;
+type Props = {
+    traits: Trait[];
+    selectedTraits: Trait[];
+    onChange: (traits: Trait[]) => void;
 };
 
-export default function TraitSelector({ onChange }: TraitSelectorProps) {
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-    const handleChange = (ids: string[]) => {
-        setSelectedIds(ids);
-        const selectedTraits = traits.filter((trait) => ids.includes(trait.id));
-        onChange(selectedTraits);
-    };
-
+export function TraitSelector({ traits, selectedTraits, onChange }: Props) {
     return (
-        <Card className="p-4 space-y-4">
-            <div className="space-y-1">
-                <Label htmlFor="trait-select">Select Traits</Label>
+        <Card className="p-6 space-y-4 shadow-sm">
+            <div className="space-y-2">
+                <Label htmlFor="trait-selector" className="text-lg font-semibold">
+                    Select Traits
+                </Label>
                 <MultiSelect
-                    options={traits.map((trait) => ({
+                    placeholder="Choose traits..."
+                    items={traits.map((trait) => ({
+                        label: trait.name,
                         value: trait.id,
-                        label: `${trait.name} (${trait.weight})`,
                     }))}
-                    value={selectedIds}
-                    onChange={handleChange}
-                    placeholder="Choose traits"
+                    selected={selectedTraits.map((trait) => trait.id)}
+                    onChange={(selectedIds) => {
+                        const newSelectedTraits = traits.filter((trait) => selectedIds.includes(trait.id));
+                        onChange(newSelectedTraits);
+                    }}
                 />
             </div>
         </Card>

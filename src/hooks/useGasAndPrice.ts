@@ -1,5 +1,4 @@
-import { fetchEthUsdPrice } from "@/utils/fetch-eth-price";
-import { fetchGasPriceGwei } from "@/utils/fetch-gas-price";
+// src/hooks/useGasAndPrice.ts
 import { useEffect, useState } from "react";
 
 type State = {
@@ -18,13 +17,33 @@ export function useGasAndPrice(refreshInterval = 30000): State {
     const fetchPrices = async () => {
         try {
             setLoading(true);
-            const [gas, eth] = await Promise.all([fetchGasPriceGwei(), fetchEthUsdPrice()]);
+
+            const res = await fetch(import.meta.env.VITE_GAS_API_URL, {
+                headers: {
+                    Authorization: import.meta.env.VITE_BLOCKNATIVE_API_KEY,
+                },
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch data from Blocknative");
+
+            const data = await res.json();
+
+            const gas = data.blockPrices?.[0]?.estimatedPrices?.[0]?.price;
+            const eth = data.blockPrices?.[0]?.estimatedPrices?.[0]?.ethPriceUSD;
+
+            if (typeof gas !== "number" || typeof eth !== "number") {
+                throw new Error("Invalid response format");
+            }
+
             setGasPriceGwei(gas);
             setEthUsdPrice(eth);
             setError(null);
         } catch (err) {
-            console.error("Error fetching prices", err);
-            setError("Failed to fetch prices");
+            if (err instanceof Error) {
+                setError(err.message);
+                setGasPriceGwei(null);
+                setEthUsdPrice(null);
+            }
         } finally {
             setLoading(false);
         }

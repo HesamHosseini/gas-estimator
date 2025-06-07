@@ -1,6 +1,23 @@
-export async function fetchGasPriceGwei(): Promise<number> {
+type BlocknativeGasResponse = {
+    blockPrices: Array<{
+        estimatedPrices: Array<{
+            confidence: number;
+            price: number; // gwei
+            maxPriorityFeePerGas: number;
+            maxFeePerGas: number;
+        }>;
+        baseFeePerGas: number;
+        estimatedTransactionCount: number;
+        blockNumber: number;
+        blockTime: number;
+        blockHash: string;
+        estimatedPriceUSD: number; // This is ETH price in USD
+    }>;
+};
+
+export async function fetchGasAndEthPrice(): Promise<{ gasPriceGwei: number; ethUsdPrice: number }> {
     const apiKey = import.meta.env.VITE_BLOCKNATIVE_API_KEY;
-    const apiUrl = import.meta.env.VITE_GAS_API_URL;
+    const apiUrl = import.meta.env.VITE_BLOCKNATIVE_GAS_API;
 
     const res = await fetch(apiUrl, {
         headers: {
@@ -9,17 +26,20 @@ export async function fetchGasPriceGwei(): Promise<number> {
     });
 
     if (!res.ok) {
-        throw new Error("Failed to fetch gas price from Blocknative");
+        throw new Error("Failed to fetch gas/ETH data from Blocknative");
     }
 
-    const data = await res.json();
+    const data: BlocknativeGasResponse = await res.json();
+    const block = data.blockPrices?.[0];
+    const gasPrice = block?.estimatedPrices?.[0]?.price;
+    const ethUsdPrice = block?.estimatedPriceUSD;
 
-    // Return the "standard" price from first block
-    const price = data.blockPrices?.[0]?.estimatedPrices?.[0]?.price;
-
-    if (typeof price !== "number") {
-        throw new Error("Unexpected gas price format");
+    if (typeof gasPrice !== "number" || typeof ethUsdPrice !== "number") {
+        throw new Error("Invalid data structure from Blocknative");
     }
 
-    return price;
+    return {
+        gasPriceGwei: gasPrice,
+        ethUsdPrice,
+    };
 }

@@ -23,7 +23,7 @@ export function TraitChart({ selectedTraits }: Props) {
     };
 
     return (
-        <Card className="p-6 w-full">
+        <Card className="p-6 w-full bg-card text-card-foreground">
             <h2 className="text-xl font-semibold mb-4">Trait Gas Weight Breakdown</h2>
             <ChartContainer className="h-[300px]" config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
