@@ -1,54 +1,88 @@
-# React + TypeScript + Vite
+# NFT Trait Gas Estimator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A lightweight **React + Vite** dApp that lets users combine NFT traits, instantly **simulate** the on‑chain gas cost, and review a detailed gas‑breakdown—without broadcasting a transaction.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Main Features
 
-## Expanding the ESLint configuration
+| Feature          | Details                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| Trait composer   | Multi‑select any subset of traits (XOR, AND, Loop, Hash…) and see live cost.               |
+| Pure math model  | Formula: `Base (20 000) × Σweights × n^1.2` → gas units → ETH → USD.                       |
+| Live pricing     | Fetches gas price from **Blocknative** (or ethers fallback) and ETH/USD from **Coinbase**. |
+| Visual breakdown | Doughnut chart (Recharts) shows per‑trait gas share + fixed base.                          |
+| Componentised UI | shadcn/ui + Tailwind, split into reusable cards + dialog.                                  |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 🛠 Tech Stack
+
+| Layer | Tools                                                              |
+| ----- | ------------------------------------------------------------------ |
+| Build | **Vite** + React 18 + TypeScript                                   |
+| UI    | Tailwind CSS, shadcn/ui, Recharts, Framer Motion, Lucide Icons     |
+| Data  | ethers.js (provider only), Blocknative Gas API, Coinbase rates API |
+
+---
+
+## 📂 Key Folder Structure
+
+```
+src/
+├─ components/
+│  ├─ home/
+│  │  ├─ LiveFeedCard.tsx
+│  │  ├─ TraitComposerCard.tsx
+│  │  ├─ CheckoutDialog.tsx
+│  │  ├─ GasChartCard.tsx
+│  │  └─ LiveFeedSkeleton.tsx
+│  ├─ estimation-result/
+│  └─ gas-breakdown-chart/
+├─ context/
+│  └─ price-context.tsx        # global gas & price polling
+├─ layouts/
+│  └─ app-shell.tsx            # navbar / footer wrapper
+├─ utils/
+│  ├─ gas-estimator.ts         # pure math logic
+│  ├─ gas-price-blocknative.ts # fetchGasPriceGwei()
+│  └─ eth-usd-price.ts         # fetchEthUsdPrice()
+└─ pages/
+   └─ HomePage.tsx
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🧮 Gas Estimation Formula
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
+EstimatedGas = BASE × (Σ weights) × (n ^ 1.2)
+BASE         = 20,000 gas units
+n            = number of selected traits
+```
+
+1. Sum weights of selected traits.
+2. Apply super‑linear penalty `(n^1.2)`.
+3. Multiply by base (20 000) → **gas units**.
+4. Convert to ETH (`units × gwei / 1e9`) and to USD (`× ETH/USD`).
+
+---
+
+## 🚀 Getting Started
+
+```bash
+# Install deps
+pnpm install   # or yarn / npm
+
+# Run local dev server (Vite)
+pnpm dev       # http://localhost:5173
+
+# Build for production
+pnpm build
+```
+
+> Ensure you have `.env` variables if you plan to hit real Blocknative / Coinbase endpoints:
+>
+> ```env
+> VITE_BLOCKNATIVE_KEY=your_key_here
+> ```
