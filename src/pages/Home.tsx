@@ -1,35 +1,33 @@
-import { useState } from "react";
+import { useContext, useMemo, useState } from "react";
 
-import { EstimationResult } from "@/components/estimation-result";
-import { LivePricePanel } from "@/components/live-price-panel";
-import { TraitChart } from "@/components/trait-chart";
-import { TraitSelector } from "@/components/trait-selector";
+import { GasChartCard, LiveFeedCard, TraitComposerCard } from "@/components/home";
+import { PriceContext } from "@/context/price-context";
 import { AppShell } from "@/layouts/app-shell";
-
-import { traits } from "@/data/traits";
-import { useGasAndPrice } from "@/hooks/useGasAndPrice";
-import { useGasEstimation } from "@/hooks/useGasEstimation";
+import { TRAITS, estimateGas, type Trait } from "@/utils/gas-estimator";
 
 export default function HomePage() {
-    const [selectedTraits, setSelectedTraits] = useState<typeof traits>([]);
+    const { gasPriceGwei, ethPriceUsd, loading, updatedAt } = useContext(PriceContext);
+    const [selectedTraits, setSelectedTraits] = useState<Trait[]>([]);
 
-    const gasUnits = useGasEstimation(selectedTraits);
-    const { gasPriceGwei, ethUsdPrice } = useGasAndPrice();
+    const gasEstimation = useMemo(
+        () => estimateGas(selectedTraits, gasPriceGwei, ethPriceUsd),
+        [selectedTraits, gasPriceGwei, ethPriceUsd]
+    );
 
     return (
         <AppShell>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Sidebar: Live price panel */}
-                <aside className="md:col-span-1">
-                    <LivePricePanel />
-                </aside>
-
-                {/* Main content */}
-                <section className="md:col-span-3 space-y-6">
-                    <TraitSelector traits={traits} selectedTraits={selectedTraits} onChange={setSelectedTraits} />
-                    <EstimationResult gasUnits={gasUnits} gasPrice={gasPriceGwei} ethPrice={ethUsdPrice} />
-                    <TraitChart selectedTraits={selectedTraits} />
-                </section>
+            <div className="container mx-auto px-4 py-6">
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <LiveFeedCard gasPriceGwei={gasPriceGwei} ethPriceUsd={ethPriceUsd} loading={loading} updatedAt={updatedAt} />
+                    <TraitComposerCard
+                        selectedTraits={selectedTraits}
+                        onTraitChange={(names) =>
+                            setSelectedTraits(names.map((n) => TRAITS.find((t) => t.name === n)).filter(Boolean) as Trait[])
+                        }
+                        gasEstimation={gasEstimation}
+                    />
+                    <GasChartCard selectedTraits={selectedTraits} gasPriceGwei={gasPriceGwei} ethPriceUsd={ethPriceUsd} />
+                </div>
             </div>
         </AppShell>
     );

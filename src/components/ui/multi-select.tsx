@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { Check, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 
 type Option = {
-    label: string;
+    label: string | React.ReactNode;
     value: string;
 };
 
@@ -30,10 +31,22 @@ export function MultiSelect({ items, selected, onChange, placeholder = "Select i
         }
     };
 
+    const handleSelectAll = () => {
+        onChange(items.map((item) => item.value));
+    };
+
+    const handleClear = () => {
+        onChange([]);
+    };
+
     const selectedLabels = items
         .filter((item) => selected.includes(item.value))
-        .map((item) => item.label)
-        .join(", ");
+        .map((item, idx, arr) => (
+            <span key={item.value} className="inline-flex items-center">
+                {item.label}
+                {idx < arr.length - 1 && <span className="mx-1">,</span>}
+            </span>
+        ));
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -51,6 +64,21 @@ export function MultiSelect({ items, selected, onChange, placeholder = "Select i
             </PopoverTrigger>
 
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                <div className="flex items-center justify-between gap-2 px-3 py-2">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="px-2 py-1 text-xs"
+                        onClick={handleSelectAll}
+                        disabled={selected.length === items.length}
+                    >
+                        Select All
+                    </Button>
+                    <Button size="sm" variant="ghost" className="px-2 py-1 text-xs" onClick={handleClear} disabled={selected.length === 0}>
+                        Clear
+                    </Button>
+                </div>
+                <Separator />
                 <Command>
                     <CommandList>
                         <CommandGroup>
